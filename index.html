@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tableau Recettes et Dépenses</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    </head>
+    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-3xl font-bold text-gray-800 text-center mb-8">Suivi
+                Financier</h1>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <!-- Formulaire d'ajout -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Ajouter
+                        une entrée</h2>
+                    <div class="flex gap-4 mb-4">
+                        <input type="text" id="description"
+                            placeholder="Description"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="recette"
+                            placeholder="Recette (€)" step="0.01"
+                            class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="number" id="depense"
+                            placeholder="Dépense (€)" step="0.01"
+                            class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="ajouterLigne()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                            Ajouter
+                        </button>
+                        <button onclick="exporterImage()"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2">
+                            📱 Exporter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tableau -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th
+                                    class="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700">Description</th>
+                                <th
+                                    class="border border-gray-300 px-4 py-3 text-right font-semibold text-green-700">Recettes
+                                    (€)</th>
+                                <th
+                                    class="border border-gray-300 px-4 py-3 text-right font-semibold text-red-700">Dépenses
+                                    (€)</th>
+                                <th
+                                    class="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableauBody">
+                            <!-- Les lignes seront ajoutées ici -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-blue-50 font-bold">
+                                <td
+                                    class="border border-gray-300 px-4 py-3 text-gray-800">TOTAL</td>
+                                <td
+                                    class="border border-gray-300 px-4 py-3 text-right text-green-700"
+                                    id="totalRecettes">0,00 €</td>
+                                <td
+                                    class="border border-gray-300 px-4 py-3 text-right text-red-700"
+                                    id="totalDepenses">0,00 €</td>
+                                <td
+                                    class="border border-gray-300 px-4 py-3 text-center">
+                                    <span class="font-bold" id="solde">0,00
+                                        €</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Résumé -->
+                <div
+                    class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                    <div class="text-center">
+                        <p class="text-lg text-gray-700">Solde actuel :
+                            <span id="soldeResume"
+                                class="text-2xl font-bold">0,00 €</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        let ligneId = 0;
+
+        function ajouterLigne() {
+            const description = document.getElementById('description').value.trim();
+            const recette = parseFloat(document.getElementById('recette').value) || 0;
+            const depense = parseFloat(document.getElementById('depense').value) || 0;
+
+            if (!description && recette === 0 && depense === 0) {
+                alert('Veuillez saisir au moins une description ou un montant.');
+                return;
+            }
+
+            const tbody = document.getElementById('tableauBody');
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.id = `ligne-${ligneId}`;
+
+            row.innerHTML = `
+                <td class="border border-gray-300 px-4 py-3">${description || '-'}</td>
+                <td class="border border-gray-300 px-4 py-3 text-right ${recette > 0 ? 'text-green-600 font-medium' : ''}">${recette > 0 ? recette.toFixed(2) + ' €' : '-'}</td>
+                <td class="border border-gray-300 px-4 py-3 text-right ${depense > 0 ? 'text-red-600 font-medium' : ''}">${depense > 0 ? depense.toFixed(2) + ' €' : '-'}</td>
+                <td class="border border-gray-300 px-4 py-3 text-center">
+                    <button onclick="supprimerLigne('ligne-${ligneId}')" 
+                            class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm transition-colors">
+                        Supprimer
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+            ligneId++;
+
+            // Réinitialiser le formulaire
+            document.getElementById('description').value = '';
+            document.getElementById('recette').value = '';
+            document.getElementById('depense').value = '';
+
+            calculerTotaux();
+        }
+
+        function supprimerLigne(ligneId) {
+            document.getElementById(ligneId).remove();
+            calculerTotaux();
+        }
+
+        function calculerTotaux() {
+            const rows = document.querySelectorAll('#tableauBody tr');
+            let totalRecettes = 0;
+            let totalDepenses = 0;
+
+            rows.forEach(row => {
+                const recetteText = row.cells[1].textContent.trim();
+                const depenseText = row.cells[2].textContent.trim();
+
+                if (recetteText !== '-') {
+                    totalRecettes += parseFloat(recetteText.replace(' €', ''));
+                }
+                if (depenseText !== '-') {
+                    totalDepenses += parseFloat(depenseText.replace(' €', ''));
+                }
+            });
+
+            const solde = totalRecettes - totalDepenses;
+
+            // Mettre à jour l'affichage
+            document.getElementById('totalRecettes').textContent = totalRecettes.toFixed(2) + ' €';
+            document.getElementById('totalDepenses').textContent = totalDepenses.toFixed(2) + ' €';
+            
+            const soldeElement = document.getElementById('solde');
+            const soldeResumeElement = document.getElementById('soldeResume');
+            const soldeText = solde.toFixed(2) + ' €';
+            
+            soldeElement.textContent = soldeText;
+            soldeResumeElement.textContent = soldeText;
+
+            // Colorer le solde selon s'il est positif ou négatif
+            const colorClass = solde >= 0 ? 'text-green-600' : 'text-red-600';
+            soldeElement.className = `font-bold ${colorClass}`;
+            soldeResumeElement.className = `text-2xl font-bold ${colorClass}`;
+        }
+
+        // Fonction d'export en image
+        function exporterImage() {
+            const element = document.body;
+            
+            html2canvas(element, {
+                backgroundColor: '#f0f4ff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: true
+            }).then(canvas => {
+                // Créer un lien de téléchargement
+                const link = document.createElement('a');
+                link.download = 'tableau-finances.png';
+                link.href = canvas.toDataURL();
+                
+                // Créer une image pour le partage
+                canvas.toBlob(function(blob) {
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'tableau-finances.png', { type: 'image/png' })] })) {
+                        // Utiliser l'API de partage native si disponible
+                        const file = new File([blob], 'tableau-finances.png', { type: 'image/png' });
+                        navigator.share({
+                            title: 'Mon tableau financier',
+                            text: 'Voici mon suivi de recettes et dépenses',
+                            files: [file]
+                        }).catch(err => {
+                            console.log('Erreur de partage:', err);
+                            // Fallback: télécharger l'image
+                            link.click();
+                        });
+                    } else {
+                        // Fallback: créer des liens de partage
+                        const imageUrl = canvas.toDataURL();
+                        
+                        // Créer une modal avec les options de partage
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                        modal.innerHTML = `
+                            <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                                <h3 class="text-lg font-bold mb-4">Partager votre tableau</h3>
+                                <div class="mb-4">
+                                    <img src="${imageUrl}" alt="Aperçu" class="w-full border rounded">
+                                </div>
+                                <div class="space-y-3">
+                                    <button onclick="telechargerImage('${imageUrl}')" 
+                                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                        📥 Télécharger l'image
+                                    </button>
+                                    <button onclick="partagerWhatsApp('${imageUrl}')" 
+                                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                                        💬 Partager sur WhatsApp
+                                    </button>
+                                    <button onclick="partagerTelegram('${imageUrl}')" 
+                                            class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+                                        ✈️ Partager sur Telegram
+                                    </button>
+                                    <button onclick="fermerModal()" 
+                                            class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        window.currentModal = modal;
+                    }
+                });
+            }).catch(err => {
+                console.error('Erreur lors de la capture:', err);
+                alert('Erreur lors de la création de l\'image. Veuillez réessayer.');
+            });
+        }
+
+        function telechargerImage(imageUrl) {
+            const link = document.createElement('a');
+            link.download = 'tableau-finances.png';
+            link.href = imageUrl;
+            link.click();
+            fermerModal();
+        }
+
+        function partagerWhatsApp(imageUrl) {
+            // Convertir l'image en blob et créer un lien de partage
+            fetch(imageUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], 'tableau-finances.png', { type: 'image/png' });
+                    const url = URL.createObjectURL(file);
+                    
+                    // Ouvrir WhatsApp Web avec un message
+                    const message = encodeURIComponent('Voici mon tableau de suivi financier 📊');
+                    window.open(`https://web.whatsapp.com/send?text=${message}`, '_blank');
+                    
+                    // Informer l'utilisateur
+                    alert('WhatsApp s\'ouvre dans un nouvel onglet. Vous pourrez ensuite joindre l\'image téléchargée à votre message.');
+                    
+                    // Télécharger aussi l'image pour faciliter le partage
+                    telechargerImage(imageUrl);
+                });
+        }
+
+        function partagerTelegram(imageUrl) {
+            // Convertir l'image en blob
+            fetch(imageUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const message = encodeURIComponent('Voici mon tableau de suivi financier 📊');
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${message}`, '_blank');
+                    
+                    // Informer l'utilisateur
+                    alert('Telegram s\'ouvre dans un nouvel onglet. Vous pourrez ensuite joindre l\'image téléchargée à votre message.');
+                    
+                    // Télécharger aussi l'image pour faciliter le partage
+                    telechargerImage(imageUrl);
+                });
+        }
+
+        function fermerModal() {
+            if (window.currentModal) {
+                document.body.removeChild(window.currentModal);
+                window.currentModal = null;
+            }
+        }
+
+        // Permettre d'ajouter avec la touche Entrée
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                ajouterLigne();
+            }
+        });
+    </script>
+        <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97334525e0cfa3b8',t:'MTc1NTg3NTE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
